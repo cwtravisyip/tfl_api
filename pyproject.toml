@@ -1,0 +1,31 @@
+[project]
+name = "tfl_api_app"
+requires-python = ">=3.11.1"
+dynamic = [ "version" ]
+
+[tool.black]
+line-length = 120
+target-version = ['py312']
+extend-exclude = ".ipynb"
+
+[tool.ruff]
+line-length = 120
+lint.select = ["E", "F", "I"]
+lint.ignore = ["E203"]
+exclude = [ "**/*.ipynb" ]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+
+[tool.coverage.report]
+show_missing = true
+fail_unber = 80
+skip_covered = true
+exclude_lines = [
+    "if __name__ == __main__:",
+]
+
+[tool.coverage.run]
+omit = [ "**/__init__.py" ]
+source = [ "src/" ] 
