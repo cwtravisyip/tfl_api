@@ -2,6 +2,17 @@
 name = "tfl_api_app"
 requires-python = ">=3.11.1"
 dynamic = [ "version" ]
+dependencies = [
+    "coverage",
+    "matplotlib",
+    "numpy",
+    "pandas",
+    "pydantic>=2.12.5",
+    "requests",
+    "seaborn",
+    "tenacity",
+]
+optional-dependencies = { dev = ["black", "ipykernel", "ruff", "pytest"] }
 
 [tool.black]
 line-length = 120
@@ -20,7 +31,7 @@ python_files = ["test_*.py"]
 
 [tool.coverage.report]
 show_missing = true
-fail_unber = 80
+fail_under = 80
 skip_covered = true
 exclude_lines = [
     "if __name__ == __main__:",

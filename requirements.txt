@@ -2,6 +2,7 @@ coverage
 matplotlib
 numpy
 pandas
+parameterized
 pydantic>=2.12.5
 requests
 seaborn
