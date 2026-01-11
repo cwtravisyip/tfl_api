@@ -1,17 +1,17 @@
 import io
 import logging
 import os
-import zipfile
 from functools import lru_cache
 from typing import Dict, List, Literal, Optional, Union
 
 import requests
 from pydantic import BaseModel, Field
-from tenacity import retry, stop_after_attempt, wait_fixed
+from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type
 
+logging.basicConfig(level=logging.DEBUG)
 LOGGER = logging.getLogger(__name__)
-LOGGER.setLevel(logging.INFO)
-logging.basicConfig(level=logging.INFO)
+LOGGER.setLevel(logging.DEBUG)
+
 
 class TflApiClient:
     """Custom client for TFL API."""
@@ -19,6 +19,7 @@ class TflApiClient:
     def __init__(self, headers: Union[Dict, None] = None):
         
         if headers is None:
+            LOGGER.debug("No headers provided. Attempting to get headers from environment variables.")
             self.headers = get_headers_from_env()
         else:
             validate_headers(headers)
@@ -46,12 +47,23 @@ class TflApiClient:
 
         return res
 
+    @lru_cache(maxsize=3)
+    def get_line_ids(self, service_types: Optional[Literal["Regular", "Night"]] = "Regular") -> List[str]:
+
+        endpoint = f"https://api.tfl.gov.uk/Line/Route?{service_types}"
+        res = self.request_endpoint(endpoint)
+
+        # return only the service name, service id, and service mode. Additional data available from res.json()
+        # return [[service["modeName"], service["id"], service["name"]] for service in res.json()]
+        # instead of returning the processed data, preserve the response object
+        return res.json()
 
 
 def get_headers_from_env() -> Dict:
     if os.getenv("TFL_ACCESS_KEY") is None:
         raise EnvironmentError("Environment variable `TFL_ACCESS_KEY` is not set.")
     else:
+        LOGGER.debug("Successfully retrieved TFL_ACCESS_KEY from environment variables.")
         return {"app_key": os.getenv("TFL_ACCESS_KEY"), "content-type": "application/json"}
 
 
@@ -74,27 +86,12 @@ def validate_headers(headers: dict):
     if not isinstance(headers["app_key"], str):
         raise ValueError("The `app_key` value in the headers is not string type.")
     else:
-        LOGGER.info("Headers is valid for access to TFL API.")
+        LOGGER.debug("Headers is valid for access to TFL API.")
 
 
-@lru_cache(maxsize=1)
-def get_line_ids(service_types: Optional[Literal["Regular", "Night"]] = "Regular") -> List[str]:
-    headers = get_headers_from_env()
-    endpoint = f"https://api.tfl.gov.uk/Line/Route?{service_types}"
-    res = request_endpoint(endpoint, headers=headers)
 
-    # return only the service name, service id, and service mode. Additional data available from res.json()
-    return [[service["modeName"], service["id"], service["name"]] for service in res.json()]
-
-
-def parse_zip_file_response(res: requests.Response):
-    # parse the result as
-    zip_bytes = io.BytesIO(res.content)
-    with zipfile.ZipFile(zip_bytes) as z:
-        LOGGER.info(z.namelist())  # see what files are inside
-
-    return zip_bytes
-
+class QueryParam(BaseModel):
+    pass
 
 class Line(BaseModel):
     service_types: Literal["Regular", "Night"] = Field(default="Regular")
@@ -119,8 +116,6 @@ if __name__ == "__main__":
 
     # set up the environment
     client = TflApiClient()
+    res = client.get_line_ids()
 
-    LINE_SERVICE_TYPE = Line(service_types="Regular", mode="tube")
-    ENDPOINT_LINE = f"https://api.tfl.gov.uk/Line/Route?{LINE_SERVICE_TYPE.service_types}"
-    res = client.request_endpoint(ENDPOINT_LINE)
     LOGGER.info("Completed job")
