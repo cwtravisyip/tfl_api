@@ -24,11 +24,22 @@ class TflApiClient:
             validate_headers(headers)
             self.headers = headers
 
-    @retry(stop=stop_after_attempt(3), wait=wait_fixed(2))
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_fixed(2),
+        retry=retry_if_exception_type(requests.RequestException),
+    )
     def request_endpoint(self, endpoint: str) -> requests.Response:
 
+        LOGGER.debug(f"Requesting line IDs from endpoint: {endpoint}")
         res = requests.get(endpoint, headers=self.headers)
+        try:
         res.raise_for_status()
+        except requests.RequestException as e:
+            LOGGER.error(f"Request to {endpoint} failed: {e}")
+            LOGGER.debug(f"Response content: {res.content}")
+
+            raise
 
         if res.status_code != 200:
             LOGGER.warning(f"Request to {endpoint} returned status code {res.status_code}")
