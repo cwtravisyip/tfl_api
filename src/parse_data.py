@@ -4,11 +4,7 @@ import io
 import pandas
 import requests
 import zipfile
-import logging
-
-logging.basicConfig(level=logging.DEBUG)
-LOGGER = logging.getLogger(__name__)
-LOGGER.setLevel(logging.DEBUG)
+from . import LOGGER
 
 JSON_NORMALIZE_KWARGS = {
     "line": {

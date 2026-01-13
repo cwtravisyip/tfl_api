@@ -1,5 +1,4 @@
 import io
-import logging
 import os
 from functools import lru_cache
 from typing import Dict, List, Literal, Optional, Union
@@ -8,9 +7,7 @@ import requests
 from pydantic import BaseModel, Field
 from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type
 
-logging.basicConfig(level=logging.DEBUG)
-LOGGER = logging.getLogger(__name__)
-LOGGER.setLevel(logging.DEBUG)
+from . import LOGGER
 
 
 class TflApiClient:
