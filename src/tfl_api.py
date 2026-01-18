@@ -55,6 +55,33 @@ class TflApiClient:
         # instead of returning the processed data, preserve the response object
         return res.json()
 
+    @lru_cache(maxsize=2)
+    def get_all_stations(self) -> requests.Response:
+        """Get zip file of all stations from TFL API."""
+
+        LOGGER.info("Requesting all stations `.zip` file from TFL.")
+        end_point = "https://api.tfl.gov.uk/stationdata/tfl-stationdata-detailed.zip"
+
+        return self.request_endpoint(end_point)
+
+    def search_station(self, keyword: str, modes: List[Literal["tube","overground","national-rail"]]) -> Dict:
+        """Make API request to search station ID by keyword"""
+
+        if not isinstance(modes, list):
+            raise TypeError(f"`modes` must be a list. Got type {type(modes)}")
+
+        if len(modes) == 0:
+            LOGGER.debug("No modes specified for stop point search.")
+            modes_query = ""
+        else:
+            modes_query = "modes=" + ",".join(modes)
+            LOGGER.debug(f"Searching stop point with modes: {modes_query}")
+
+        endpoint = f"https://api.tfl.gov.uk/StopPoint/Search/{keyword}?{modes_query}"
+        res = self.request_endpoint(endpoint)
+
+        return res.json()
+
 
 def get_headers_from_env() -> Dict:
     if os.getenv("TFL_ACCESS_KEY") is None:
